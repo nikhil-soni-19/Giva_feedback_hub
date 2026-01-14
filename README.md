@@ -28,7 +28,7 @@ This project uses **no AI/ML models** — all analysis is done using **custom ru
 
 ---
 
-## 🏗️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |------|-----------|
