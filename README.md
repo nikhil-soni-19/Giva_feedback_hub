@@ -1,4 +1,4 @@
-# 💍 Giva Feedback Hub
+#  Giva Feedback Hub
 
 A simple end-to-end feedback analytics system for **Giva (Jewelry Brand)** that collects customer reviews, performs rule-based sentiment and theme analysis, and displays actionable insights on a dynamic dashboard.
 
@@ -6,9 +6,9 @@ This project uses **no AI/ML models** — all analysis is done using **custom ru
 
 ---
 
-## 📌 Features
+##  Features
 
-### ✅ Backend (FastAPI)
+###  Backend (FastAPI)
 - Submit product feedback (ring, earring, necklace)
 - Rule-based sentiment analysis (Positive / Negative / Neutral)
 - Rule-based theme detection:
@@ -18,7 +18,7 @@ This project uses **no AI/ML models** — all analysis is done using **custom ru
 - Product-wise feedback storage (SQLite)
 - REST APIs with auto-generated Swagger docs
 
-### ✅ Frontend (HTML, CSS, JavaScript)
+###  Frontend (HTML, CSS, JavaScript)
 - Feedback submission form
 - Product-wise dashboard
 - Sentiment visualization using bar charts
