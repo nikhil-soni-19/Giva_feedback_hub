@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Giva Feedback Hub</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f9f9f9;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        select, textarea, button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+
+        button {
+            background: #2b7cff;
+            color: white;
+            border: none;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1a5fd0;
+        }
+
+        #insights {
+            margin-top: 15px;
+            background: #eef;
+            padding: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>💍 Giva Feedback Hub</h1>
+
+<div class="container">
+
+    <!-- -------------------------------
+         Feedback Submission (Task B1)
+    -------------------------------- -->
+    <div class="card">
+        <h2>Submit Feedback</h2>
+
+        <label>Product</label>
+        <select id="product" onchange="loadDashboard()">
+            <option value="">-- Select Product --</option>
+            <option value="ring_101">Ring</option>
+            <option value="earring_201">Earring</option>
+            <option value="necklace_301">Necklace</option>
+        </select>
+
+        <label>Rating (1–5)</label>
+        <select id="rating">
+            <option>1</option><option>2</option><option>3</option>
+            <option>4</option><option>5</option>
+        </select>
+
+        <label>Review</label>
+        <textarea id="review" rows="4"></textarea>
+
+        <button onclick="submitFeedback()">Submit</button>
+    </div>
+
+    <!-- -------------------------------
+         Dashboard (Task B2)
+    -------------------------------- -->
+    <div class="card">
+        <h2>Sentiment Dashboard</h2>
+        <canvas id="sentimentChart"></canvas>
+        <canvas id="themeChart" style="margin-top:20px;"></canvas>
+    </div>
+
+</div>
+
+<!-- -------------------------------
+     Insight Generator (Task B3)
+-------------------------------- -->
+<div class="card" style="margin-top:30px;">
+    <h2>Business Insights</h2>
+    <button onclick="generateInsights()">Generate Insights</button>
+    <div id="insights"></div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+/* 🔹 Product-wise configuration */
+const PRODUCT_CONFIG = {
+    ring_101: {
+        name: "Ring",
+        criticalThemes: ["Comfort", "Durability"],
+        comfortSensitivity: "high"
+    },
+    earring_201: {
+        name: "Earring",
+        criticalThemes: ["Comfort", "Appearance"],
+        comfortSensitivity: "very_high"
+    },
+    necklace_301: {
+        name: "Necklace",
+        criticalThemes: ["Appearance"],
+        comfortSensitivity: "low"
+    }
+};
+
+let sentimentChart, themeChart;
+
+// -------------------------------
+// Submit Feedback
+// -------------------------------
+async function submitFeedback() {
+    const product = document.getElementById("product").value;
+    const rating = parseInt(document.getElementById("rating").value);
+    const review = document.getElementById("review").value;
+
+    await fetch(`${API}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            product_id: product,
+            rating: rating,
+            review_text: review
+        })
+    });
+
+    document.getElementById("review").value = "";
+    // loadDashboard();
+}
+
+// -------------------------------
+// Load Dashboard Data
+// -------------------------------
+async function loadDashboard() {
+    const product = document.getElementById("product").value;
+
+    // 🛑 No product selected → clear dashboard
+    if (!product) {
+        clearDashboard();
+        return;
+    }
+
+    const res = await fetch(`${API}/feedback/${product}`);
+    const data = await res.json();
+
+    let positive = 0, negative = 0;
+    let themes = { Comfort: 0, Durability: 0, Appearance: 0 };
+
+    data.feedbacks.forEach(f => {
+        if (f.sentiment === "Positive") positive++;
+        if (f.sentiment === "Negative") negative++;
+        f.themes.forEach(t => themes[t]++);
+    });
+
+    drawSentimentChart(positive, negative);
+    drawThemeChart(themes);
+}
+
+
+// -------------------------------
+// Charts
+// -------------------------------
+function drawSentimentChart(pos, neg) {
+    if (sentimentChart) sentimentChart.destroy();
+
+    sentimentChart = new Chart(document.getElementById("sentimentChart"), {
+        type: "bar",
+        data: {
+            labels: ["Positive", "Negative"],
+            datasets: [{
+                label: "Number of Reviews",
+                data: [pos, neg],
+                backgroundColor: ["#4CAF50", "#F44336"]
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+function drawThemeChart(themes) {
+    if (themeChart) themeChart.destroy();
+
+    themeChart = new Chart(document.getElementById("themeChart"), {
+        type: "bar",
+        data: {
+            labels: Object.keys(themes),
+            datasets: [{
+                label: "Theme Count",
+                data: Object.values(themes),
+                backgroundColor: "#2b7cff"
+            }]
+        }
+    });
+}
+
+function clearDashboard() {
+    if (sentimentChart) {
+        sentimentChart.destroy();
+        sentimentChart = null;
+    }
+    if (themeChart) {
+        themeChart.destroy();
+        themeChart = null;
+    }
+
+    document.getElementById("insights").innerHTML =
+        "Select a product to view insights.";
+}
+
+// -------------------------------
+// Insight Generator (Task B3)
+// -------------------------------
+async function generateInsights() {
+    const productId = document.getElementById("product").value;
+    const config = PRODUCT_CONFIG[productId];
+
+    const res = await fetch(`${API}/feedback/${productId}`);
+    const data = await res.json();
+
+    let negativeThemes = {
+        Comfort: 0,
+        Durability: 0,
+        Appearance: 0
+    };
+
+    data.feedbacks.forEach(f => {
+        if (f.sentiment === "Negative") {
+            f.themes.forEach(t => negativeThemes[t]++);
+        }
+    });
+
+    let insights = [];
+
+    if (config.comfortSensitivity === "very_high" && negativeThemes.Comfort >= 1) {
+        insights.push(
+            `${config.name}s cause discomfort. Strongly consider lighter designs.`
+        );
+    }
+
+    if (config.comfortSensitivity === "high" && negativeThemes.Comfort >= 1) {
+        insights.push(
+            `${config.name} comfort issues detected. Weight optimization recommended.`
+        );
+    }
+
+    if (config.comfortSensitivity === "low" && negativeThemes.Comfort >= 2) {
+        insights.push(
+            `${config.name} comfort complaints are rising. Review ergonomics.`
+        );
+    }
+
+    if (config.criticalThemes.includes("Durability") && negativeThemes.Durability >= 1) {
+        insights.push(
+            `${config.name} durability issues reported. Improve material strength.`
+        );
+    }
+
+    if (config.criticalThemes.includes("Appearance") && negativeThemes.Appearance >= 1) {
+        insights.push(
+            `${config.name} appearance needs improvement (polish/design).`
+        );
+    }
+
+    document.getElementById("insights").innerHTML =
+        insights.length ? insights.join("<br>") : "No major product-specific issues detected.";
+}
+
+
+// Initial load
+// loadDashboard();
+</script>
+
+</body>
+</html>
